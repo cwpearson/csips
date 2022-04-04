@@ -1,4 +1,38 @@
 # csips
-Carl's Simple Integer Programming Solver
+**C**arl's **S**imple **I**nteger **P**rogramming **S**olver.
 
-A pure-python integer programming solver
+A pure-python integer programming solver using branch-and-bound with scipy's `linprog` for subproblem LP relaxation.
+
+- [x] Integer linear programming problems
+- [x] Embedded python DSL: no need to specify standard form
+- [x] Pure python: only python dependencies, no need to install other solvers
+
+**CSIPS does not support**
+
+- [ ] Non-integer variables (real-valued)
+- [ ] Non-linear constraints (quadratic or otherwise)
+- [ ] Input/output formats compatible with other solvers.
+
+## Specifying your problem
+
+...
+
+## Solving your problem
+
+...
+
+## Tests
+```
+poetry run pytest
+```
+
+## Contributing
+
+1. Install poetry.
+2. Use poetry to install project dependencies.
+3. Make sure vscode python interpreter is the poetry venv one.
+
+## License
+
+This project is available under the terms of GPL 3.0. 
+Please see [LICENSE](LICENSE) for details.

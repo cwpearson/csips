@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "csips"
+version = "0.1.0"
+description = "A pure-python integer linear programming solver"
+authors = ["Carl Pearson <me@carlpearson.net>"]
+
+[tool.poetry.dependencies]
+python = "^3.9,<3.11"
+scipy = "^1.8.0"
+psutil = "^5.9.0"
+matplotlib = "^3.5.1"
+numpy = "^1.22.3"
+
+[tool.poetry.dev-dependencies]
+black = "^22.3.0"
+mypy = "^0.942"
+pylint = "^2.13.4"
+pytest = "^7.1.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
