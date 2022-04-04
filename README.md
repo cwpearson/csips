@@ -15,6 +15,8 @@ A pure-python integer programming solver using branch-and-bound with scipy's `li
 
 ## Using
 
+**BEWARE!** This was written purely as an educational exercise.
+
 Add csips as a submodule for now, then use like `from csips import csips`.
 You may be able to aim your package manager at this git repo and use it that way as well.
 Then you should only ened `import csips`
@@ -33,8 +35,6 @@ poetry run pytest
 ```
 
 ## Contributing
-
-This was written purely as an educational exercise.
 
 1. Install poetry.
 2. Use poetry to install project dependencies.
