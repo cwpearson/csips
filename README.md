@@ -28,6 +28,8 @@ poetry run pytest
 
 ## Contributing
 
+This was written purely as an educational exercise.
+
 1. Install poetry.
 2. Use poetry to install project dependencies.
 3. Make sure vscode python interpreter is the poetry venv one.
