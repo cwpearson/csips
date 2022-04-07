@@ -309,7 +309,7 @@ def solve_lp_relaxation(ip: IP) -> Solution:
         ip.Aeq,
         ip.beq,
         ip.bounds,
-        method="revised simplex",
+        method="highs",
         options={},
     )
     print(f"result {result}")
