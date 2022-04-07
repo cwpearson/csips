@@ -49,7 +49,7 @@ def most_infeasible(soln: Solution, prob: IP) -> Tuple[IP, IP]:
     x = soln.x[ix]
 
     if not is_integer(x):
-        print(f"variable {ix} = {x} is not integral")
+        print(f"variable {ix} = {x} is most infeasible")
         # subproblem 1: add var[ix] <= floor(x)
         bounds = list(prob.bounds)
         lb, ub = bounds[ix][0], bounds[ix][1]

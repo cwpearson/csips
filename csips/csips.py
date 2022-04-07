@@ -312,7 +312,6 @@ def solve_lp_relaxation(ip: IP) -> Solution:
         method="highs",
         options={},
     )
-    print(f"result {result}")
     if not result.success:
         return Solution(None, float("inf"))
     else:
