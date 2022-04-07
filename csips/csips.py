@@ -29,6 +29,8 @@ such that A_ub * x <= b_ub
 
 
 """
+from csips import branch
+from csips.problem import IP, Solution
 
 from scipy.optimize import linprog, OptimizeResult
 from scipy.sparse import csr_matrix
@@ -37,19 +39,6 @@ import numpy as np
 import math
 import sys
 from typing import NamedTuple, Any, Tuple, Union
-
-
-class IP(NamedTuple):
-    """
-    Inputs to a linear progrmaming solver
-    """
-
-    cT: Any
-    Aub: csr_matrix
-    bub: Any
-    Aeq: csr_matrix
-    beq: Any
-    bounds: list[Tuple[Union[int, None], Union[int, None]]]
 
 
 class Var:
@@ -488,7 +477,7 @@ def example_ip_3():
     return m.get_ip()
 
 
-def solve_lp_relaxation(ip: IP) -> OptimizeResult:
+def solve_lp_relaxation(ip: IP) -> Solution:
     result = linprog(
         ip.cT,
         ip.Aub,
@@ -499,7 +488,10 @@ def solve_lp_relaxation(ip: IP) -> OptimizeResult:
         # method="highs",
         options={},
     )
-    return result
+    if not result.success:
+        return Solution(None, float("inf"))
+    else:
+        return Solution(result.x, result.fun)
 
 
 def is_integer(x, TOL):
@@ -508,89 +500,62 @@ def is_integer(x, TOL):
 
 def branch_and_bound(
     ip: IP,
-    bestX=None,  # best solution so far
-    bestF=float("inf"),  # objective of best solution so far
-):
+    best=Solution(None, float("inf")),  # best solution so far
+    brancher=branch.first,  # branch strategy
+) -> Solution:
     """
     return (best soln, best function value) for ip
 
     """
 
-    print(f"solve... (best so far is {bestF} @ {bestX})")
+    print(f"solve... (best so far is {best})")
 
     TOL = 1e-8
 
-    result = solve_lp_relaxation(ip)
-    print(f"LP Iterations: {result.nit}")
+    soln = solve_lp_relaxation(ip)
 
     # no feasible solution
-    if not result.success:
+    if soln.x is None:
         print(f"no feasible LP solution")
-        return bestX, bestF
+        return best
     else:  # feasible solution, but it's not good enough
-        if result.fun >= bestF:
+        if soln.fun >= best.fun:
             print(
-                f"feasible LP solution {result.fun} @ {result.x} no better than best integer solution so far {bestF} @ {bestX}"
+                f"feasible LP solution {soln} no better than best integer solution so far {best}"
             )
-            return bestX, bestF
+            return best
         else:
-            print(f"feasible LP solution {result.fun} @ {result.x}")
+            print(f"feasible LP solution {soln}")
 
     # if an all-integer solution, return it if it's better than the best so far,
     # otherwise return best so far
     all_integer = True
-    for ix, x in enumerate(result.x):
+    for ix, x in enumerate(soln.x):
         if not is_integer(x, TOL):
             all_integer = False
             break
     if all_integer:
-        if result.fun < bestF:
-            print(
-                f"integer solution {result.fun} @ {result.x} is best so far (better than {bestF} @ {bestX})"
-            )
-            return result.x, result.fun
+        if soln.fun < best.fun:
+            print(f"integer solution {soln} is best so far (better than {best})")
+            return soln
         else:
-            print(
-                f"integer solution {result.fun} @ {result.x} is worse than best so far: {bestF} @ {bestX}"
-            )
-            return bestX, bestF
+            print(f"integer solution {soln} is worse than best so far: {best}")
+            return best
 
     # otherwise, create two subproblems for each non-integer solution
-    for ix, x in enumerate(result.x):
-        if not is_integer(x, TOL):
-            print(f"variable {ix} = {x} is not integral")
-            # subproblem 1: add var[ix] <= floor(x)
-            bounds = list(ip.bounds)
-            lb, ub = bounds[ix][0], bounds[ix][1]
+    s1, s2 = brancher(soln, ip)
+    r1 = branch_and_bound(s1, best, brancher=brancher)
 
-            if ub is None:
-                ub = float("inf")
-            bounds[ix] = lb, min(ub, math.floor(x))
-            print(f"left subprob with new bounds for var {ix}: {bounds[ix]}")
-            sip = IP(ip.cT, ip.Aub, ip.bub, ip.Aeq, ip.beq, bounds)
-            r1x, r1f = branch_and_bound(sip, bestX, bestF)
+    if r1.fun < best.fun:
+        print(f"s1 produced new best: {r1} (better than {best})")
+        best = r1
 
-            if r1f < bestF:
-                print(
-                    f"l sub produced new best: {r1f} @ {r1x} (better than {bestF} @ {bestX})"
-                )
-                bestF = r1f
-                bestX = r1x
+    r2 = branch_and_bound(s2, best, brancher=brancher)
+    if r2.fun < best.fun:
+        print(f"s2 produced new best: {r2} (better than {best})")
+        best = r2
 
-            # subproblem 2: add var[ix] >= ceil(x)
-            bounds = list(ip.bounds)
-            lb, ub = bounds[ix][0], bounds[ix][1]
-            bounds[ix] = max(lb, math.ceil(x)), ub
-            print(f"right subprob with new bounds for var {ix}: {bounds[ix]}")
-            sip = IP(ip.cT, ip.Aub, ip.bub, ip.Aeq, ip.beq, bounds)
-            r2x, r2f = branch_and_bound(sip, bestX, bestF)
-
-            if r2f < bestF:
-                print(f"r sub new best: {r2f} @ {r2x}")
-                bestF = r2f
-                bestX = r2x
-
-            return bestX, bestF
+    return best
 
 
 # ip = example_ip_1()
