@@ -30,6 +30,7 @@ such that A_ub * x <= b_ub
 
 """
 from csips import branch
+from csips import cut
 from csips.problem import IP, Solution
 
 from scipy.optimize import linprog, OptimizeResult
@@ -308,9 +309,10 @@ def solve_lp_relaxation(ip: IP) -> Solution:
         ip.Aeq,
         ip.beq,
         ip.bounds,
-        # method="highs",
+        method="revised simplex",
         options={},
     )
+    print(f"result {result}")
     if not result.success:
         return Solution(None, float("inf"))
     else:
@@ -325,6 +327,7 @@ def branch_and_bound(
     ip: IP,
     best=Solution(None, float("inf")),  # best solution so far
     brancher=branch.first,  # branch strategy
+    cutter=cut.noop,  # cutting strategy
 ) -> Solution:
     """
     return (best soln, best function value) for ip
@@ -365,15 +368,21 @@ def branch_and_bound(
             print(f"integer solution {soln} is worse than best so far: {best}")
             return best
 
+    # no integer solution, see if we can find some cuts
+    sc, found = cutter(soln, ip)
+    if found:
+        print(f"added cuts, solving compared to {best}")
+        return branch_and_bound(sc, best, brancher=brancher, cutter=cutter)
+
     # otherwise, create two subproblems for each non-integer solution
     s1, s2 = brancher(soln, ip)
-    r1 = branch_and_bound(s1, best, brancher=brancher)
+    r1 = branch_and_bound(s1, best, brancher=brancher, cutter=cutter)
 
     if r1.fun < best.fun:
         print(f"s1 produced new best: {r1} (better than {best})")
         best = r1
 
-    r2 = branch_and_bound(s2, best, brancher=brancher)
+    r2 = branch_and_bound(s2, best, brancher=brancher, cutter=cutter)
     if r2.fun < best.fun:
         print(f"s2 produced new best: {r2} (better than {best})")
         best = r2

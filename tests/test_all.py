@@ -1,10 +1,11 @@
 import pytest
 
 import csips
+from csips import branch, cut
 import numpy as np
 
 
-def test_1():
+def case_1(brancher, cutter):
     """
     https://faculty.math.illinois.edu/~mlavrov/docs/482-spring-2020/lecture33.pdf
     max      4x+5y
@@ -16,13 +17,19 @@ def test_1():
     integer solution should be x,y = 2,2 with f = 18
     """
 
-    cT = np.array([4, 5])
+    cT = np.array([4, 5], dtype=np.float64)
     cT *= -1  # convert max to min
-    Aub = [
-        [1, 4],
-        [3, -4],
-    ]
-    bub = [10, 6]
+    Aub = np.array(
+        [
+            [1, 4],
+            [3, -4],
+        ],
+        dtype=np.float64,
+    )
+    bub = np.array(
+        [10, 6],
+        dtype=np.float64,
+    )
     Aeq = None
     beq = None
     bounds = [
@@ -31,10 +38,25 @@ def test_1():
     ]
 
     ip = csips.IP(cT, Aub, bub, Aeq, beq, bounds)
-    result = csips.branch_and_bound(ip)
+    result = csips.branch_and_bound(ip, brancher=brancher, cutter=cutter)
+    print(f"check result {result.x}")
 
-    assert np.all(np.isclose(result[0], [2, 2]))
-    assert np.all(np.isclose(result[1], -18))
+    assert result.x is not None
+
+    assert np.all(np.isclose(result.x, [2, 2]))
+    assert np.all(np.isclose(result.fun, -18))
+
+
+def test_1_first_noop():
+    case_1(branch.first, cut.noop)
+
+
+def test_1_infeasible_noop():
+    case_1(branch.most_infeasible, cut.noop)
+
+
+# def test_1_first_gomory():
+#     case_1(branch.first, cut.gomory)
 
 
 def test_2():
